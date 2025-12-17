@@ -7,30 +7,16 @@
 #include <QFile>
 #include <QTextStream>
 #include <QCloseEvent>
-#include <QDate>
-#include <QDialog>
-#include <QTextCodec>
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget *parent)  //Конструктор
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
-    ui->tablePurchase->horizontalHeader()->setStretchLastSection(false);
     ui->tablePurchase->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tablePurchase->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tablePurchase->setSortingEnabled(true);
-
-    ui->tableSale->horizontalHeader()->setStretchLastSection(false);
     ui->tableSale->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tableSale->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tableSale->setSortingEnabled(true);
-
-    ui->tableStock->horizontalHeader()->setStretchLastSection(false);
     ui->tableStock->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tableStock->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tableStock->setSortingEnabled(true);
 
     connect(ui->actionSave, &QAction::triggered, this, &MainWindow::saveToFile);
     connect(ui->actionLoad, &QAction::triggered, this, &MainWindow::loadFromFile);
@@ -42,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionHelp, &QAction::triggered, this, &MainWindow::showHelp);
 }
 
-MainWindow::~MainWindow()
+MainWindow::~MainWindow()       //Деструктор
 {
     delete ui;
 }
@@ -194,6 +180,14 @@ void MainWindow::updateStockTable()
 void MainWindow::editProduct()
 {
     QTableWidget* currentTable = getCurrentTable();
+
+    int tabIndex = ui->tabWidget->currentIndex();
+    if (tabIndex == 2) {
+        QMessageBox::warning(this, "Ошибка",
+                             "Редактирование записей в таблице склада запрещено!\n" "Остатки автоматически рассчитываются на основе покупок и продаж.");
+        return;
+    }
+
     int currentRow = currentTable->currentRow();
     if (currentRow == -1) {
         QMessageBox::warning(this, "Ошибка", "Выберите запись для редактирования!");
@@ -236,23 +230,20 @@ void MainWindow::editProduct()
 void MainWindow::deleteProduct()
 {
     QTableWidget* currentTable = getCurrentTable();
+
+    int tabIndex = ui->tabWidget->currentIndex();
+    if (tabIndex == 2) {
+        QMessageBox::warning(this, "Ошибка",
+                             "Удаление записей в таблице склада запрещено!\n" "Остатки автоматически рассчитываются на основе покупок и продаж.");
+        return;
+    }
+
     int currentRow = currentTable->currentRow();
     if (currentRow != -1 && QMessageBox::question(this, "Удаление", "Удалить запись?") == QMessageBox::Yes) {
         currentTable->removeRow(currentRow);
         updateStockTable();
         markDataChanged();
     }
-}
-
-void MainWindow::showHelp()
-{
-    QMessageBox::about(this, "О программе",
-                       "Данная программа представляет собой приложение для складского учета\n"
-                       "С помощью нее вы можете:\n"
-                       "1) Добавить товар и всю информацию о нем\n"
-                       "2) Редактирование данных о товаре\n"
-                       "3) Удалить товар из списка\n"
-                       "4) Создать отчет за определенный период\n");
 }
 
 void MainWindow::saveToFile()
@@ -344,6 +335,13 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 }
 
+void MainWindow::showHelp()
+{
+    QMessageBox::about(this, "О программе","Данная программа представляет собой приложение для складского учета\n"
+                                            "С помощью нее вы можете:\n" "1) Добавить товар и всю информацию о нем\n" "2) Редактирование данных о товаре\n"
+                                            "3) Удалить товар из списка\n" "4) Создать отчет за определенный период\n");
+}
+
 void MainWindow::markDataChanged() {
     dataChanged = true;
 }
@@ -365,6 +363,11 @@ void MainWindow::generateReport()
     connect(formUi.btnGenerate, &QPushButton::clicked, &dialog, [&]() {
         QDate startDate = formUi.dateEditStart->date();
         QDate endDate = formUi.dateEditEnd->date();
+
+        if (startDate > endDate) {
+            QMessageBox::warning(&dialog, "Ошибка", "Дата начала позже даты окончания!");
+            return;
+        }
 
         QString fileName = QFileDialog::getSaveFileName(&dialog, QStringLiteral("Сохранить отчет"), "", "CSV файлы (*.csv)");
         if (fileName.isEmpty()) return;

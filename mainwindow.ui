@@ -217,7 +217,7 @@
     <iconset theme="QIcon::ThemeIcon::MailSend"/>
    </property>
    <property name="text">
-    <string>Создать тчет</string>
+    <string>Создать отчет</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+R</string>
